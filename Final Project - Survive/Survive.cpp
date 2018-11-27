@@ -1,6 +1,13 @@
 /*Text based survival game.
- *@Last Update: 11/19/2018 | 12:43 PM
+ *@Last Update: 11/27/2018 | 12:26 PM
  *@Updated By: Marcus Coleman
+ ========================================================================================================================================
+ Item Code Index (this number starts after the Health, Hunger, Stamina, and Round data, index starts at 0 because inventory is an array):
+ (maybe? maybe not)
+ 0 - Wood
+ 1 - Stick
+ 2 - Chops
+ 3 - Rocks
 */
 #include <iostream>
 #include <fstream>
@@ -9,21 +16,17 @@
 #include <cstdlib>
 using namespace std;
 
-int mainMenu();
+void saveGame(int health, int hunger, int stamina, int round, int inventory[5]);
 void newGame();
 void createSave();
 void loadGame();
 int runGame(string fileName);
-int ingame(int health, int hunger, int stamina, int round);
+int ingame(int health, int hunger, int stamina, int round, int inventory[5]);
 void options();
 void help();
 int tutorial();
 
 int main(){
-    int play = mainMenu();
-}
-
-int mainMenu(){
     system("CLS");
     char command;
     cout <<"      #######                                                                  " << endl;
@@ -67,8 +70,9 @@ int mainMenu(){
     case 'e':
         return 0;
     default:
-        cout << "Invalid Option!";
-        return 0;
+        cout << "Invalid Option! Try again.\n";
+        cin >> command;
+        system("CLS");
     }
 }
 
@@ -93,7 +97,7 @@ void loadGame(){
 void options(){
     cout << "Coming soon!";
     system("pause");
-    mainMenu();
+    main();
 }
 
 void help(){
@@ -109,7 +113,7 @@ void help(){
     cout << "and do it right!\n=========================================================================================================\n";
     cout <<  "For more help, check the README file. If your problem persists, check our GitHub at:\nhttps://github.com/iMarcakeus\n";
     system("pause");
-    mainMenu();
+    main();
 }
 
 void createSave(){
@@ -120,18 +124,38 @@ void createSave(){
     getline(cin, fileName);
     fileName = ".\\saves\\" + fileName + ".txt";
     ofstream save(fileName.c_str());
-    save << "100\n50\n5\n0";
+    save << "100\n50\n5\n0\n0\n0\n0\n0\n0";
+    save.close();
+    runGame(fileName);
+}
+
+void saveGame(int health, int hunger, int stamina, int round, int inventory[5]){
+    string fileName;
+    cout << "What would you like to name your save? ";
+    cin.clear();
+    cin.ignore();
+    getline(cin, fileName);
+    fileName = ".\\saves\\" + fileName + ".txt";
+    ofstream save(fileName.c_str());
+    save << health << "\n" << hunger << "\n" << stamina << "\n" << round << "\n";
+    for(int i=0; i<5; i++){
+        save << inventory[i] << endl;
+    }
     save.close();
     runGame(fileName);
 }
 
 int runGame(string fileName){
     int health, hunger, stamina, round;
+    int inventory[5];
     ifstream save(fileName.c_str());
     save >> health;
     save >> hunger;
     save >> stamina;
     save >> round;
+    for(int i=0; i<5; i++){
+        save >> inventory[i];
+    }
     cout << "|  Stats   |\tHealth: " << health << "\tHunger: " << hunger << "\tStamina: " << stamina << "\tRound: " << round << endl;
     cout << "Ready to continue? [Y/N] ";
     char ready;
@@ -145,8 +169,9 @@ int runGame(string fileName){
     switch(ready){
     case 'Y':
     case 'y':
-        ingame(health, hunger, stamina, round);
+        ingame(health, hunger, stamina, round, inventory);
     default:
+        main();
         return 0;
     }
 }
@@ -164,15 +189,14 @@ int tutorial(){
     return 1;
 }
 
-int advance(){
-
-}
-
-int ingame(int health, int hunger, int stamina, int round){
-    while(true){
+int ingame(int health, int hunger, int stamina, int round, int inventory[5]){
+    while(health > 0){
         system("CLS");
         srand(time(NULL));
         int trees, rocks, sheep = 0;
+        for(int i=0; i<5; i++){
+            cout << inventory[i] << endl;
+        }
         while(round == 0){
             round = tutorial();
         }
@@ -182,31 +206,38 @@ int ingame(int health, int hunger, int stamina, int round){
         cout << "Welcome to round " << round << "!\n";
         cout << "You were fortunate to find: " << trees << " trees, " << rocks << " rocks, and " << sheep << " sheep. Who knows what else we will find?\n";
         for(int i=stamina; i>0; i--){
+            if(health == 0){
+                break;
+            }
             char choice;
             cout << "You have " << i << " stamina left.\n";
             cout << "What should we do?\n";
-            cout << "A - Explore     B - Eat     C - Hunt     D - Push Forward     E - Exit to Main Menu" << endl;
+            cout << "A - Explore     B - Eat     C - Hunt     D - Save Game     E - Exit to Main Menu" << endl;
             cin >> choice;
             switch(choice){
             case 'A':
             case 'a':
-                //explore();
-                break;
+                health = 0;
+                //explore(); || Finds monsters, tools at higher levels, and more. Uses stamina based on what you pick up? or uses stamina to explore.
             case 'B':
             case 'b':
                 //eat();
+                //restores HEALTH and HUNGER but not STAMINA.
                 break;
             case 'C':
             case 'c':
-                //hunt();
+                //hunt(); || IDEAS: Using tools to hunt: Knife, Fists, etc? Guns may be too intricate to implement,
+                //worse weapons use more of your stamina and give less food in return. Food will come cooked because cooking food
+                //will be a hard mechanic to implement?
                 break;
             case 'D':
             case 'd':
-                advance();
+                saveGame(health, hunger, stamina, round, inventory);
                 break;
             case 'E':
             case 'e':
-                mainMenu();
+                main();
+                return 0;
             default:
                 cout << "Invalid option! Please try again.\n";
                 i += 1;
@@ -214,4 +245,7 @@ int ingame(int health, int hunger, int stamina, int round){
         }
         round += 1;
     }
+    cout << "You have died! You survived to round " << round << ".\n";
+    system("PAUSE");
+    main();
 }
